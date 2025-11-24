@@ -27,9 +27,11 @@ resource "aws_lb" "main" {
   name                       = "${var.prefix}-alb"
   internal                   = false
   load_balancer_type         = "application"
+  ip_address_type            = "ipv4"
   security_groups            = [aws_security_group.alb.id]
   subnets                    = local.public_subnets
   enable_deletion_protection = false
+  idle_timeout               = 300
 
   tags = var.tags
 }
@@ -49,6 +51,12 @@ resource "aws_lb_target_group" "ip" {
     path                = "/healthz"
   }
 
+  stickiness {
+    enabled         = true
+    type            = "lb_cookie"
+    cookie_duration = 3600
+  }
+
   tags = var.tags
 }
 
@@ -58,8 +66,16 @@ resource "aws_lb_listener" "http" {
   port              = "80"
   protocol          = "HTTP"
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.ip.arn
+    type = "forward"
+    forward {
+      target_group {
+        arn = aws_lb_target_group.ip.arn
+      }
+      stickiness {
+        enabled  = true
+        duration = 3600
+      }
+    }
   }
 
   tags = var.tags
@@ -73,8 +89,16 @@ resource "aws_lb_listener" "https" {
   ssl_policy        = var.ssl_policy
   certificate_arn   = var.certificate_arn
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.ip.arn
+    type = "forward"
+    forward {
+      target_group {
+        arn = aws_lb_target_group.ip.arn
+      }
+      stickiness {
+        enabled  = true
+        duration = 3600
+      }
+    }
   }
 
   tags = var.tags

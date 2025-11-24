@@ -36,6 +36,41 @@ resource "aws_iam_role_policy" "taskrole" {
         Resource = [
           "arn:aws:logs:*:*:*"
         ]
+      },
+      {
+        Effect = "Allow",
+        Action = ["s3:*"],
+        Resource = [
+          "arn:aws:s3:::${var.prefix}-binary-data",
+          "arn:aws:s3:::${var.prefix}-binary-data/*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "secretsmanager:ListSecrets",
+          "secretsmanager:BatchGetSecretValue"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
+        ],
+        Resource = "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}*"
+      },
+      {
+        Effect = "Deny",
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ],
+        Resource = [
+          "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}-db-credentials-*",
+          "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}-valkey-credentials-*"
+        ]
       }
     ]
   })
@@ -78,6 +113,27 @@ resource "aws_iam_role_policy" "executionrole" {
         ],
         Resource = [
           "arn:aws:logs:*:*:*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ],
+        Resource = [
+          "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}-db-credentials-*",
+          "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}-valkey-credentials-*"
         ]
       }
     ]
