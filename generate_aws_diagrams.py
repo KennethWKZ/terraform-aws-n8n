@@ -107,7 +107,7 @@ with Diagram("N8n AWS Architecture - High Level Overview (Queue Mode)",
     browserless >> Edge(label="registers") >> cloudmap
     main >> Edge(label="WebSocket\nws://browserless:3000", color="purple") >> browserless
 
-# Diagram 2: Queue Mode Architecture Detail
+# Diagram 2: Queue Mode Architecture Detail with Task Runners
 with Diagram("N8n AWS Architecture - Queue Mode Detail",
              filename="aws_n8n_queue_architecture",
              direction="LR",
@@ -116,10 +116,14 @@ with Diagram("N8n AWS Architecture - Queue Mode Detail",
     
     with Cluster("ECS Fargate Cluster"):
         with Cluster("Main Service (Web UI)"):
-            main_task = ECS("Main Instance\nConcurrency: 15\nPool Size: 10")
+            main_task = ECS("Main Instance\nConcurrency: 15\nPool Size: 10\n(Offloads to Workers)")
             
-        with Cluster("Worker Service"):
-            worker_task = Fargate("Worker Instance\nConcurrency: 50\nPool Size: 20")
+        with Cluster("Worker Service (ECS Task)"):
+            with Cluster("Worker Task Containers"):
+                worker_task = Fargate("n8n-worker\nConcurrency: 50\nPool Size: 20")
+                task_runner = Fargate("Task Runner\nSidecar\n(Code Execution)")
+            # localhost connection within the same task
+            worker_task >> Edge(label="localhost:5679\n(broker)", color="orange", style="bold") >> task_runner
         
         efs_storage = EFS("EFS Volume\nShared /home/node/.n8n")
     
@@ -136,6 +140,9 @@ with Diagram("N8n AWS Architecture - Queue Mode Detail",
     main_task >> Edge(label="1. Enqueue\nworkflow execution", color="red", style="bold") >> valkey
     valkey >> Edge(label="2. Dequeue\njob for processing", color="red", style="bold") >> worker_task
     worker_task >> Edge(label="3. Update\nexecution status", color="blue") >> aurora
+    
+    # Task runner executes code sandboxed
+    worker_task >> Edge(label="4. Offload\ncode execution", color="orange", style="bold") >> task_runner
     
     # Shared storage
     efs_storage >> Edge(style="dashed", label="mount") >> main_task
@@ -166,7 +173,9 @@ with Diagram("N8n AWS Architecture - Network Architecture",
                 
                 with Cluster("Private Subnet A"):
                     main_a = Fargate("Main\nTask A\nn8n UI")
-                    worker_a = Fargate("Worker\nTask A")
+                    with Cluster("Worker Task A"):
+                        worker_a = Fargate("n8n-worker A")
+                        task_runner_a = Fargate("Task Runner\nSidecar A")
                     browserless_a = Fargate("Browserless\nTask A\nChromium")
                     rds_a = Aurora("Aurora\nPrimary")
                     cache_a = ElastiCache("Valkey\nServerless")
@@ -179,7 +188,9 @@ with Diagram("N8n AWS Architecture - Network Architecture",
                 
                 with Cluster("Private Subnet B"):
                     main_b = Fargate("Main\nTask B\nn8n UI")
-                    worker_b = Fargate("Worker\nTask B")
+                    with Cluster("Worker Task B"):
+                        worker_b = Fargate("n8n-worker B")
+                        task_runner_b = Fargate("Task Runner\nSidecar B")
                     browserless_b = Fargate("Browserless\nTask B\nChromium")
                     rds_b = Aurora("Aurora\nReplica")
                     cache_b = ElastiCache("Valkey\nServerless")
@@ -212,6 +223,10 @@ with Diagram("N8n AWS Architecture - Network Architecture",
         efs_a - Edge(style="dashed") - worker_a
         efs_b - Edge(style="dashed") - main_b
         efs_b - Edge(style="dashed") - worker_b
+        
+        # Task runner sidecar connections (localhost within same task)
+        worker_a >> Edge(label="localhost:5679", color="orange") >> task_runner_a
+        worker_b >> Edge(label="localhost:5679", color="orange") >> task_runner_b
         
         # Browserless WebSocket connections
         main_a >> Edge(label="ws:3000", color="purple") >> browserless_a
@@ -289,7 +304,9 @@ with Diagram("N8n AWS Architecture - Monitoring",
         with Cluster("Monitored Resources"):
             alb = ELB("ALB\nMetrics")
             main = ECS("Main Service\nn8n Logs")
-            worker = Fargate("Worker Service\nn8n-worker Logs")
+            with Cluster("Worker Task Logs"):
+                worker = Fargate("n8n-worker\nLogs")
+                task_runner = Fargate("Task Runner\nSidecar Logs")
             browserless = Fargate("Browserless\nContainer Logs")
             rds = Aurora("Aurora\nPerformance")
             cache = ElastiCache("Valkey Serverless\nMetrics")
@@ -298,6 +315,7 @@ with Diagram("N8n AWS Architecture - Monitoring",
     alb >> cw
     main >> cw
     worker >> cw
+    task_runner >> Edge(label="task-runner-worker-logs", color="orange") >> cw
     browserless >> cw
     rds >> cw
     cache >> cw
@@ -329,7 +347,9 @@ with Diagram("N8n AWS Architecture - Comprehensive View (Queue Mode)",
                 
                 with Cluster("Private Subnet A: 10.0.11.0/24"):
                     main_a = Fargate("Main\nTask A\nn8n UI\nQueues Jobs")
-                    worker_a = Fargate("Worker\nTask A\nProcesses Jobs")
+                    with Cluster("Worker Task A"):
+                        worker_a = Fargate("n8n-worker A\nProcesses Jobs")
+                        task_runner_a = Fargate("Task Runner\nSidecar A")
                     browserless_a = Fargate("Browserless\nTask A\nChromium")
                     ecs_sg_a = SecurityGroup("ECS SG A")
                     browserless_sg_a = SecurityGroup("Browserless\nSG A")
@@ -343,7 +363,9 @@ with Diagram("N8n AWS Architecture - Comprehensive View (Queue Mode)",
                 
                 with Cluster("Private Subnet B: 10.0.12.0/24"):
                     main_b = Fargate("Main\nTask B\nn8n UI\nQueues Jobs")
-                    worker_b = Fargate("Worker\nTask B\nProcesses Jobs")
+                    with Cluster("Worker Task B"):
+                        worker_b = Fargate("n8n-worker B\nProcesses Jobs")
+                        task_runner_b = Fargate("Task Runner\nSidecar B")
                     browserless_b = Fargate("Browserless\nTask B\nChromium")
                     ecs_sg_b = SecurityGroup("ECS SG B")
                     browserless_sg_b = SecurityGroup("Browserless\nSG B")
@@ -448,6 +470,10 @@ with Diagram("N8n AWS Architecture - Comprehensive View (Queue Mode)",
     main_b >> Edge(label="workflows/users", color="blue", penwidth="4.5") >> aurora_serverless
     worker_a >> Edge(label="execution status", color="blue", penwidth="4.5") >> aurora_serverless
     worker_b >> Edge(label="execution status", color="blue", penwidth="4.5") >> aurora_serverless
+    
+    # Task runner sidecar connections (localhost within same ECS task)
+    worker_a >> Edge(label="localhost:5679\n(broker)", color="orange", penwidth="4.5") >> task_runner_a
+    worker_b >> Edge(label="localhost:5679\n(broker)", color="orange", penwidth="4.5") >> task_runner_b
     
     # n8n to Browserless WebSocket connections (via Service Discovery DNS)
     main_a >> Edge(label="WebSocket\nws://browserless:3000", color="purple", penwidth="5.0") >> browserless_a

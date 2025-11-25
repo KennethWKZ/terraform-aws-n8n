@@ -131,10 +131,16 @@ resource "aws_iam_role_policy" "executionrole" {
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret"
         ],
-        Resource = [
-          "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}-db-credentials-*",
-          "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}-valkey-credentials-*"
-        ]
+        Resource = concat(
+          [
+            "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}-db-credentials-*",
+            "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}-valkey-credentials-*"
+          ],
+          # Add task runner auth token secret if external mode is enabled
+          var.task_runner_enabled && var.task_runner_mode == "external" ? [
+            "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}-task-runner-auth-token-*"
+          ] : []
+        )
       }
     ]
   })

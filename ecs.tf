@@ -1,3 +1,27 @@
+# Generate a secure random token for task runner authentication
+resource "random_password" "task_runner_auth_token" {
+  count   = var.task_runner_enabled && var.task_runner_mode == "external" ? 1 : 0
+  length  = 64
+  special = false
+}
+
+# Store task runner auth token in Secrets Manager
+resource "aws_secretsmanager_secret" "task_runner_auth_token" {
+  count                   = var.task_runner_enabled && var.task_runner_mode == "external" ? 1 : 0
+  name                    = "${var.prefix}-task-runner-auth-token"
+  recovery_window_in_days = var.db_secret_recovery_days
+
+  tags = var.tags
+}
+
+resource "aws_secretsmanager_secret_version" "task_runner_auth_token" {
+  count     = var.task_runner_enabled && var.task_runner_mode == "external" ? 1 : 0
+  secret_id = aws_secretsmanager_secret.task_runner_auth_token[0].id
+  secret_string = jsonencode({
+    token = random_password.task_runner_auth_token[0].result
+  })
+}
+
 locals {
   # Base environment variables for n8n container
   n8n_base_environment = [
@@ -35,6 +59,10 @@ locals {
     },
     {
       name  = "N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS"
+      value = "true"
+    },
+    {
+      name  = "N8N_BLOCK_ENV_ACCESS_IN_NODE"
       value = "true"
     },
     {
@@ -146,7 +174,15 @@ locals {
       value = "true"
     },
     {
+      name  = "N8N_GIT_NODE_DISABLE_BARE_REPOS"
+      value = "true"
+    },
+    {
       name  = "N8N_DIAGNOSTICS_ENABLED"
+      value = "false"
+    },
+    {
+      name  = "N8N_SKIP_AUTH_ON_OAUTH_CALLBACK"
       value = "false"
     },
     {
@@ -214,6 +250,55 @@ locals {
       value = tostring(var.worker_pool_size)
     }
   ]
+
+  # Task runner environment variables for n8n container (external mode)
+  task_runner_n8n_environment = var.task_runner_enabled ? [
+    {
+      name  = "N8N_RUNNERS_ENABLED"
+      value = "true"
+    },
+    {
+      name  = "N8N_RUNNERS_MODE"
+      value = var.task_runner_mode
+    },
+    {
+      name  = "N8N_RUNNERS_BROKER_LISTEN_ADDRESS"
+      value = var.task_runner_mode == "external" ? "0.0.0.0" : "127.0.0.1"
+    },
+    {
+      name  = "OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS"
+      value = tostring(var.offload_manual_executions_to_workers)
+    }
+  ] : []
+
+  # Task runner sidecar container environment variables
+  task_runner_sidecar_environment = [
+    {
+      name  = "N8N_RUNNERS_TASK_BROKER_URI"
+      value = "http://localhost:5679"
+    },
+    {
+      name  = "N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT"
+      value = tostring(var.task_runner_auto_shutdown_timeout)
+    },
+    {
+      # Python runner support is in beta - enable with this env var
+      name  = "N8N_NATIVE_PYTHON_RUNNER"
+      value = "true"
+    },
+    {
+      # Enable debug logging for task runner launcher
+      name  = "N8N_RUNNERS_LAUNCHER_LOG_LEVEL"
+      value = "debug"
+    }
+  ]
+
+  # Determine if main instances need task runner sidecars
+  # Main instances need sidecars if offload is disabled or if they run manual executions
+  main_needs_task_runner = var.task_runner_enabled && var.task_runner_mode == "external" && !var.offload_manual_executions_to_workers
+
+  # Workers always need task runner sidecars in external mode
+  worker_needs_task_runner = var.task_runner_enabled && var.task_runner_mode == "external"
 }
 
 resource "aws_ecs_cluster" "ecs" {
@@ -269,58 +354,117 @@ resource "aws_cloudwatch_log_group" "browserless" {
   tags = var.tags
 }
 
+# Task Runner CloudWatch log group (for main instances if needed)
+resource "aws_cloudwatch_log_group" "task_runner_main" {
+  count             = local.main_needs_task_runner ? 1 : 0
+  name              = "${var.prefix}-task-runner-main-logs"
+  retention_in_days = 180
+
+  tags = var.tags
+}
+
+# Task Runner CloudWatch log group (for worker instances)
+resource "aws_cloudwatch_log_group" "task_runner_worker" {
+  count             = local.worker_needs_task_runner ? 1 : 0
+  name              = "${var.prefix}-task-runner-worker-logs"
+  retention_in_days = 180
+
+  tags = var.tags
+}
+
 resource "aws_ecs_task_definition" "taskdef" {
   family             = "${var.prefix}-taskdef"
   task_role_arn      = aws_iam_role.taskrole.arn
   execution_role_arn = aws_iam_role.executionrole.arn
-  container_definitions = jsonencode([
-    {
-      name      = "n8n"
-      image     = var.container_image
-      essential = true
-      portMappings = [
-        {
-          containerPort = 5678
-          hostPort      = 5678
-          protocol      = "tcp"
-        }
-      ]
-      mountPoints = [
-        {
-          sourceVolume  = "persistent"
-          containerPath = "/home/node/.n8n"
-          readOnly      = false
-        }
-      ]
-      # Conditionally add SMTP configuration if smtp_host is provided
-      environment = var.smtp_host != null ? concat(
-        local.n8n_base_environment,
-        local.n8n_smtp_environment,
-        local.main_environment_overrides
-      ) : concat(
-        local.n8n_base_environment,
-        local.main_environment_overrides
-      )
-      secrets = [
-        {
-          name      = "DB_POSTGRESDB_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.db_credentials.arn}:password::"
-        },
-        {
-          name      = "QUEUE_BULL_REDIS_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.valkey_credentials.arn}:password::"
-        }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.logs.name
-          awslogs-region        = data.aws_region.current.id
-          awslogs-stream-prefix = "n8n"
+  container_definitions = jsonencode(concat(
+    # Main n8n container
+    [
+      {
+        name      = "n8n"
+        image     = var.container_image
+        essential = true
+        portMappings = [
+          {
+            containerPort = 5678
+            hostPort      = 5678
+            protocol      = "tcp"
+          }
+        ]
+        mountPoints = [
+          {
+            sourceVolume  = "persistent"
+            containerPath = "/home/node/.n8n"
+            readOnly      = false
+          }
+        ]
+        # Conditionally add SMTP and task runner configuration
+        environment = concat(
+          local.n8n_base_environment,
+          var.smtp_host != null ? local.n8n_smtp_environment : [],
+          local.main_environment_overrides,
+          local.task_runner_n8n_environment
+        )
+        secrets = concat(
+          [
+            {
+              name      = "DB_POSTGRESDB_PASSWORD"
+              valueFrom = "${aws_secretsmanager_secret.db_credentials.arn}:password::"
+            },
+            {
+              name      = "QUEUE_BULL_REDIS_PASSWORD"
+              valueFrom = "${aws_secretsmanager_secret.valkey_credentials.arn}:password::"
+            }
+          ],
+          # Add task runner auth token secret if external mode is enabled
+          # Main instance always needs auth token in external mode (acts as broker)
+          var.task_runner_enabled && var.task_runner_mode == "external" ? [
+            {
+              name      = "N8N_RUNNERS_AUTH_TOKEN"
+              valueFrom = "${aws_secretsmanager_secret.task_runner_auth_token[0].arn}:token::"
+            }
+          ] : []
+        )
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = aws_cloudwatch_log_group.logs.name
+            awslogs-region        = data.aws_region.current.id
+            awslogs-stream-prefix = "n8n"
+          }
         }
       }
-    }
-  ])
+    ],
+    # Task runner sidecar container (only if external mode and main needs it)
+    local.main_needs_task_runner ? [
+      {
+        name      = "task-runner"
+        image     = var.task_runner_image
+        essential = false
+        environment = local.task_runner_sidecar_environment
+        secrets = [
+          {
+            name      = "N8N_RUNNERS_AUTH_TOKEN"
+            valueFrom = "${aws_secretsmanager_secret.task_runner_auth_token[0].arn}:token::"
+          }
+        ]
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = aws_cloudwatch_log_group.task_runner_main[0].name
+            awslogs-region        = data.aws_region.current.id
+            awslogs-stream-prefix = "task-runner"
+          }
+        }
+        # Task runner needs to wait for n8n to start
+        dependsOn = [
+          {
+            containerName = "n8n"
+            condition     = "START"
+          }
+        ]
+      }
+    ] : []
+  ))
   volume {
     name = "persistent"
     efs_volume_configuration {
@@ -339,8 +483,9 @@ resource "aws_ecs_task_definition" "taskdef" {
     operating_system_family = "LINUX"
     cpu_architecture        = "ARM64"
   }
-  cpu    = 1024
-  memory = 2048
+  # Increase CPU/memory if task runner sidecar is included
+  cpu    = local.main_needs_task_runner ? 1024 + var.task_runner_cpu : 1024
+  memory = local.main_needs_task_runner ? 2048 + var.task_runner_memory : 2048
 
   tags = var.tags
 }
@@ -350,48 +495,88 @@ resource "aws_ecs_task_definition" "worker" {
   family             = "${var.prefix}-worker-taskdef"
   task_role_arn      = aws_iam_role.taskrole.arn
   execution_role_arn = aws_iam_role.executionrole.arn
-  container_definitions = jsonencode([
-    {
-      name      = "n8n-worker"
-      image     = var.container_image
-      essential = true
-      command   = ["worker"]
-      mountPoints = [
-        {
-          sourceVolume  = "persistent"
-          containerPath = "/home/node/.n8n"
-          readOnly      = false
-        }
-      ]
-      # Worker-specific environment with concurrency limit override
-      environment = var.smtp_host != null ? concat(
-        local.n8n_base_environment,
-        local.n8n_smtp_environment,
-        local.worker_environment_overrides
-      ) : concat(
-        local.n8n_base_environment,
-        local.worker_environment_overrides
-      )
-      secrets = [
-        {
-          name      = "DB_POSTGRESDB_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.db_credentials.arn}:password::"
-        },
-        {
-          name      = "QUEUE_BULL_REDIS_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.valkey_credentials.arn}:password::"
-        }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.worker_logs.name
-          awslogs-region        = data.aws_region.current.id
-          awslogs-stream-prefix = "n8n-worker"
+  container_definitions = jsonencode(concat(
+    # Worker n8n container
+    [
+      {
+        name      = "n8n-worker"
+        image     = var.container_image
+        essential = true
+        command   = ["worker"]
+        mountPoints = [
+          {
+            sourceVolume  = "persistent"
+            containerPath = "/home/node/.n8n"
+            readOnly      = false
+          }
+        ]
+        # Worker-specific environment with concurrency limit override and task runner config
+        environment = concat(
+          local.n8n_base_environment,
+          var.smtp_host != null ? local.n8n_smtp_environment : [],
+          local.worker_environment_overrides,
+          local.task_runner_n8n_environment
+        )
+        secrets = concat(
+          [
+            {
+              name      = "DB_POSTGRESDB_PASSWORD"
+              valueFrom = "${aws_secretsmanager_secret.db_credentials.arn}:password::"
+            },
+            {
+              name      = "QUEUE_BULL_REDIS_PASSWORD"
+              valueFrom = "${aws_secretsmanager_secret.valkey_credentials.arn}:password::"
+            }
+          ],
+          # Add task runner auth token secret if external mode is enabled
+          local.worker_needs_task_runner ? [
+            {
+              name      = "N8N_RUNNERS_AUTH_TOKEN"
+              valueFrom = "${aws_secretsmanager_secret.task_runner_auth_token[0].arn}:token::"
+            }
+          ] : []
+        )
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = aws_cloudwatch_log_group.worker_logs.name
+            awslogs-region        = data.aws_region.current.id
+            awslogs-stream-prefix = "n8n-worker"
+          }
         }
       }
-    }
-  ])
+    ],
+    # Task runner sidecar container (only if external mode)
+    local.worker_needs_task_runner ? [
+      {
+        name      = "task-runner"
+        image     = var.task_runner_image
+        essential = false
+        environment = local.task_runner_sidecar_environment
+        secrets = [
+          {
+            name      = "N8N_RUNNERS_AUTH_TOKEN"
+            valueFrom = "${aws_secretsmanager_secret.task_runner_auth_token[0].arn}:token::"
+          }
+        ]
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            awslogs-group         = aws_cloudwatch_log_group.task_runner_worker[0].name
+            awslogs-region        = data.aws_region.current.id
+            awslogs-stream-prefix = "task-runner"
+          }
+        }
+        # Task runner needs to wait for worker to start
+        dependsOn = [
+          {
+            containerName = "n8n-worker"
+            condition     = "START"
+          }
+        ]
+      }
+    ] : []
+  ))
   volume {
     name = "persistent"
     efs_volume_configuration {
@@ -410,8 +595,9 @@ resource "aws_ecs_task_definition" "worker" {
     operating_system_family = "LINUX"
     cpu_architecture        = "ARM64"
   }
-  cpu    = var.worker_cpu
-  memory = var.worker_memory
+  # Increase CPU/memory if task runner sidecar is included
+  cpu    = local.worker_needs_task_runner ? var.worker_cpu + var.task_runner_cpu : var.worker_cpu
+  memory = local.worker_needs_task_runner ? var.worker_memory + var.task_runner_memory : var.worker_memory
 
   tags = var.tags
 }

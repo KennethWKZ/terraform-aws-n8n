@@ -388,3 +388,50 @@ variable "browserless_force_new_deployment" {
   description = "Force a new deployment of the ECS service to pull latest n8n - browserless container image. Set to true to trigger redeployment, then set back to false."
   default     = false
 }
+
+# Task Runner Configuration Variables (n8n v2.0+)
+variable "task_runner_enabled" {
+  type        = bool
+  description = "Enable task runners for Code node execution (required for n8n v2.0+)"
+  default     = true
+}
+
+variable "task_runner_mode" {
+  type        = string
+  description = "Task runner mode: 'internal' (child process) or 'external' (sidecar container). External mode is recommended for production."
+  default     = "external"
+  validation {
+    condition     = contains(["internal", "external"], var.task_runner_mode)
+    error_message = "Task runner mode must be either 'internal' or 'external'."
+  }
+}
+
+variable "task_runner_image" {
+  type        = string
+  description = "Container image for task runners (n8n v2.0+ external mode)"
+  default     = "n8nio/runners:latest"
+}
+
+variable "task_runner_cpu" {
+  type        = number
+  description = "CPU units for task runner sidecar container (1024 = 1 vCPU). Task runners execute Code node JavaScript/Python. Must result in valid Fargate total when added to worker_cpu (valid totals: 1024, 2048, 4096)."
+  default     = 1024
+}
+
+variable "task_runner_memory" {
+  type        = number
+  description = "Memory in MB for task runner sidecar container. Must result in valid Fargate total when added to worker_memory. For 2048 CPU, valid memory range is 4096-16384 MB."
+  default     = 2048
+}
+
+variable "task_runner_auto_shutdown_timeout" {
+  type        = number
+  description = "Auto shutdown timeout in seconds for idle task runners (0 to disable)"
+  default     = 15
+}
+
+variable "offload_manual_executions_to_workers" {
+  type        = bool
+  description = "Offload manual executions to workers. When true, main instances don't need task runner sidecars."
+  default     = true
+}

@@ -20,6 +20,32 @@ The total costs are approximately $50-150 per month depending on usage patterns.
 - Workers can scale independently based on queue depth
 - Better resource isolation between UI and execution workloads
 
+### Task Runners (n8n v2.0+)
+
+Starting with n8n v2.0, **task runners** are enabled by default for improved security and performance when executing Code nodes (JavaScript/Python). This module supports task runners in **external mode**, which runs them as sidecar containers alongside n8n instances.
+
+**Key Features**:
+- **External Mode (Recommended)**: Task runners run as separate sidecar containers using the `n8nio/runners` Docker image
+- **Improved Security**: Code node execution is isolated in separate containers, providing better security boundaries
+- **Better Performance**: Up to 6x improvement in workflow executions using Code nodes
+- **Automatic Configuration**: Auth tokens are securely generated and stored in AWS Secrets Manager
+
+**Architecture**:
+| Component | Docker Image | Purpose |
+|-----------|--------------|---------|
+| Main | `n8nio/n8n` | Web UI, webhooks, triggers |
+| Worker | `n8nio/n8n` | Processes queued executions |
+| Task Runner | `n8nio/runners` | Executes Code nodes (JS/Python) |
+
+**Configuration Options**:
+- `task_runner_enabled` - Enable/disable task runners (default: `true`)
+- `task_runner_mode` - `internal` (child process) or `external` (sidecar container, recommended for production)
+- `task_runner_image` - Docker image for task runners (default: `n8nio/runners:latest`)
+- `offload_manual_executions_to_workers` - When `true`, main instances don't need task runner sidecars (default: `true`)
+
+**Important Migration Note** (n8n v2.0):
+> The main `n8nio/n8n` Docker image no longer includes the task runner for external mode. This module automatically deploys the separate `n8nio/runners` image as sidecar containers when `task_runner_mode = "external"`.
+
 ## Usage with Terragrunt
 
 This module fully supports [Terragrunt](https://terragrunt.gruntwork.io/), a thin wrapper for Terraform that provides extra tools for keeping configurations DRY, managing remote state, and working with multiple modules.
