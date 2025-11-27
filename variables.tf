@@ -435,3 +435,13 @@ variable "offload_manual_executions_to_workers" {
   description = "Offload manual executions to workers. When true, main instances don't need task runner sidecars."
   default     = true
 }
+
+# Additional Environment Variables
+variable "additional_n8n_env_vars" {
+  type = list(object({
+    name  = string
+    value = string
+  }))
+  description = "Additional environment variables to pass to n8n containers"
+  default     = []
+}

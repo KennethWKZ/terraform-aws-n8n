@@ -151,7 +151,7 @@ locals {
     },
     {
       name  = "N8N_SSO_SCOPES_PROVISION_PROJECT_ROLES"
-      value = "true"
+      value = "false"
     },
     {
       name  = "N8N_SSO_JUST_IN_TIME_PROVISIONING"
@@ -397,12 +397,13 @@ resource "aws_ecs_task_definition" "taskdef" {
             readOnly      = false
           }
         ]
-        # Conditionally add SMTP and task runner configuration
+        # Conditionally add SMTP, task runner, and additional environment variables
         environment = concat(
           local.n8n_base_environment,
           var.smtp_host != null ? local.n8n_smtp_environment : [],
           local.main_environment_overrides,
-          local.task_runner_n8n_environment
+          local.task_runner_n8n_environment,
+          var.additional_n8n_env_vars
         )
         secrets = concat(
           [
@@ -510,12 +511,13 @@ resource "aws_ecs_task_definition" "worker" {
             readOnly      = false
           }
         ]
-        # Worker-specific environment with concurrency limit override and task runner config
+        # Worker-specific environment with concurrency limit override, task runner config, and additional vars
         environment = concat(
           local.n8n_base_environment,
           var.smtp_host != null ? local.n8n_smtp_environment : [],
           local.worker_environment_overrides,
-          local.task_runner_n8n_environment
+          local.task_runner_n8n_environment,
+          var.additional_n8n_env_vars
         )
         secrets = concat(
           [

@@ -64,6 +64,14 @@ locals {
   task_runner_memory                   = get_env("N8N_TASK_RUNNER_MEMORY", "2048")
   task_runner_auto_shutdown_timeout    = get_env("N8N_TASK_RUNNER_AUTO_SHUTDOWN_TIMEOUT", "15")
   offload_manual_executions_to_workers = get_env("N8N_OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS", "true")
+
+  # Staging-specific environment variables
+  additional_n8n_env_vars = [
+    # {
+    #   name  = "N8N_SSO_SCOPES_PROJECT_ROLE_CLAIM_NAME"
+    #   value = "role"
+    # }
+  ]
 }
 
 # Provide inputs for the module
@@ -128,6 +136,9 @@ inputs = {
   task_runner_memory                   = tonumber(local.task_runner_memory)
   task_runner_auto_shutdown_timeout    = tonumber(local.task_runner_auto_shutdown_timeout)
   offload_manual_executions_to_workers = tobool(local.offload_manual_executions_to_workers)
+
+  # Staging-specific environment variables
+  additional_n8n_env_vars = local.additional_n8n_env_vars
 
   # Note: When vpc_id is not specified, a new VPC will be created automatically
   # with public/private subnets, NAT Gateway, Internet Gateway, ElastiCache Redis, and Aurora Serverless v2
