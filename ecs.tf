@@ -191,7 +191,7 @@ locals {
     },
     {
       name  = "N8N_LOG_LEVEL"
-      value = "debug"
+      value = "error"
     }
   ]
 
@@ -289,7 +289,7 @@ locals {
     {
       # Enable debug logging for task runner launcher
       name  = "N8N_RUNNERS_LAUNCHER_LOG_LEVEL"
-      value = "debug"
+      value = "error"
     }
   ]
 

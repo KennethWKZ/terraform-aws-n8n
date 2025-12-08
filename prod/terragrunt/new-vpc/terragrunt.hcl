@@ -55,6 +55,23 @@ locals {
   smtp_pass   = get_env("N8N_SMTP_PASS", "")
   smtp_sender = get_env("N8N_SMTP_SENDER", "")
   smtp_ssl    = get_env("N8N_SMTP_SSL", "true")
+
+  # Task Runner configuration (n8n v2.0+)
+  task_runner_enabled                  = get_env("N8N_TASK_RUNNER_ENABLED", "true")
+  task_runner_mode                     = get_env("N8N_TASK_RUNNER_MODE", "external")
+  task_runner_image                    = get_env("N8N_TASK_RUNNER_IMAGE", "n8nio/runners:latest")
+  task_runner_cpu                      = get_env("N8N_TASK_RUNNER_CPU", "1024")
+  task_runner_memory                   = get_env("N8N_TASK_RUNNER_MEMORY", "2048")
+  task_runner_auto_shutdown_timeout    = get_env("N8N_TASK_RUNNER_AUTO_SHUTDOWN_TIMEOUT", "15")
+  offload_manual_executions_to_workers = get_env("N8N_OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS", "true")
+
+  # Staging-specific environment variables
+  additional_n8n_env_vars = [
+    # {
+    #   name  = "N8N_SSO_SCOPES_PROJECT_ROLE_CLAIM_NAME"
+    #   value = "role"
+    # }
+  ]
 }
 
 # Provide inputs for the module
@@ -110,6 +127,18 @@ inputs = {
 
   n8n_force_new_deployment          = true
   browserless_force_new_deployment  = true
+
+  # Task Runner configuration (n8n v2.0+)
+  task_runner_enabled                  = tobool(local.task_runner_enabled)
+  task_runner_mode                     = local.task_runner_mode
+  task_runner_image                    = local.task_runner_image
+  task_runner_cpu                      = tonumber(local.task_runner_cpu)
+  task_runner_memory                   = tonumber(local.task_runner_memory)
+  task_runner_auto_shutdown_timeout    = tonumber(local.task_runner_auto_shutdown_timeout)
+  offload_manual_executions_to_workers = tobool(local.offload_manual_executions_to_workers)
+
+  # Staging-specific environment variables
+  additional_n8n_env_vars = local.additional_n8n_env_vars
 
   # Note: When vpc_id is not specified, a new VPC will be created automatically
   # with public/private subnets, NAT Gateway, Internet Gateway, ElastiCache Redis, and Aurora Serverless v2

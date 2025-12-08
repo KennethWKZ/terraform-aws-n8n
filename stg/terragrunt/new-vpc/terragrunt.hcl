@@ -47,7 +47,7 @@ locals {
 
   browserless_enabled = get_env("N8N_BROWSERLESS_ENABLED", "0")
   browserless_token = get_env("N8N_BROWSERLESS_TOKEN", "")
-  
+
   # SMTP configuration for email functionality
   smtp_host   = get_env("N8N_SMTP_HOST", "")
   smtp_port   = get_env("N8N_SMTP_PORT", "465")
