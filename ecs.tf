@@ -86,12 +86,12 @@ locals {
       value = "s3"
     },
     {
-      name  = "QUEUE_BULL_REDIS_ELASTICACHE_SERVERLESS"
-      value = "true"
-    },
-    {
       name  = "QUEUE_BULL_REDIS_CLUSTER_NODES"
       value = "${aws_elasticache_serverless_cache.valkey.endpoint[0].address}:${aws_elasticache_serverless_cache.valkey.endpoint[0].port}"
+    },
+    {
+      name  = "QUEUE_BULL_REDIS_DNS_LOOKUP_STRATEGY"
+      value = "NONE"
     },
     {
       name  = "QUEUE_BULL_REDIS_TLS"
