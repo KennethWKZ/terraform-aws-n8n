@@ -94,6 +94,14 @@ locals {
       value = "NONE"
     },
     {
+      name  = "QUEUE_BULL_REDIS_SLOT_REFRESH_TIMEOUT"
+      value = "5000"
+    },
+    {
+      name  = "QUEUE_BULL_REDIS_SLOT_REFRESH_INTERVAL"
+      value = "10000"
+    },
+    {
       name  = "QUEUE_BULL_REDIS_TLS"
       value = "true"
     },
