@@ -436,6 +436,25 @@ variable "offload_manual_executions_to_workers" {
   default     = true
 }
 
+# Daily ECS Redeployment (EventBridge Scheduler)
+variable "daily_redeployment_enabled" {
+  type        = bool
+  description = "Enable daily EventBridge Scheduler-driven ECS redeployment (calls ecs:UpdateService with forceNewDeployment=true)"
+  default     = true
+}
+
+variable "daily_redeployment_cron" {
+  type        = string
+  description = "Cron expression for daily ECS redeployment in EventBridge Scheduler format. Default: 01:00 daily."
+  default     = "cron(0 1 * * ? *)"
+}
+
+variable "daily_redeployment_timezone" {
+  type        = string
+  description = "IANA timezone for the daily redeployment schedule (e.g. Asia/Kuala_Lumpur, UTC)"
+  default     = "Asia/Kuala_Lumpur"
+}
+
 # Additional Environment Variables
 variable "additional_n8n_env_vars" {
   type = list(object({
