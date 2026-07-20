@@ -68,7 +68,7 @@ with Diagram("N8n AWS Architecture - High Level Overview (Queue Mode)",
                     cloudmap = CloudMap("Service Discovery\nbrowserless.local")
                 
                 with Cluster("Database Layer"):
-                    rds = Aurora("Aurora Serverless v2\nPostgreSQL 17.5\n0.5-1 ACU")
+                    rds = Aurora("Aurora Serverless v2\nPostgreSQL 17.7\n0.5-1 ACU")
                 
                 with Cluster("Cache/Queue Layer"):
                     cache = ElastiCache("ElastiCache Valkey\nServerless\nBull Queue Backend")
@@ -385,7 +385,7 @@ with Diagram("N8n AWS Architecture - Comprehensive View (Queue Mode)",
             
             with Cluster("Database Layer (Multi-AZ)"):
                 with Cluster("Aurora Serverless v2"):
-                    aurora_serverless = Aurora("Aurora Serverless v2\nPostgreSQL 17.5\n(AWS-managed HA)")
+                    aurora_serverless = Aurora("Aurora Serverless v2\nPostgreSQL 17.7\n(AWS-managed HA)")
                     rds_sg = SecurityGroup("RDS SG\nECS:5432")
                 
                 with Cluster("ElastiCache Valkey Serverless"):

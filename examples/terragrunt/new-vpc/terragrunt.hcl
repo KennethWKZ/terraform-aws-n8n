@@ -28,7 +28,7 @@ locals {
   # Database configuration
   db_name                  = get_env("N8N_DB_NAME", "n8n")
   db_master_username       = get_env("N8N_DB_MASTER_USERNAME", "n8n_admin")
-  db_engine_version        = get_env("N8N_DB_ENGINE_VERSION", "17.5")
+  db_engine_version        = get_env("N8N_DB_ENGINE_VERSION", "17.7")
   db_min_capacity          = get_env("N8N_DB_MIN_CAPACITY", "0.5")
   db_max_capacity          = get_env("N8N_DB_MAX_CAPACITY", "1")
   db_instance_count        = get_env("N8N_DB_INSTANCE_COUNT", "1")

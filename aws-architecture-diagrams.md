@@ -43,7 +43,7 @@ graph TB
                 end
                 
                 subgraph "Database Layer"
-                    RDS[(Aurora Serverless v2<br/>PostgreSQL 17.5<br/>0.5-4 ACU<br/>AWS Managed HA)]
+                    RDS[(Aurora Serverless v2<br/>PostgreSQL 17.7<br/>0.5-4 ACU<br/>AWS Managed HA)]
                 end
                 
                 subgraph "Cache & Queue Layer"
@@ -467,7 +467,7 @@ graph TB
 - **Integration**: Associated with ALB via web ACL ARN
 
 ### Aurora Serverless v2
-- **Engine**: PostgreSQL 17.5
+- **Engine**: PostgreSQL 17.7
 - **Capacity**: Min 0.5 ACU, Max 4 ACU
 - **High Availability**: AWS-managed Multi-AZ
 - **Backup**: Automated daily backups

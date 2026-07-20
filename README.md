@@ -5,7 +5,7 @@ This sets up a N8n cluster in **Queue Mode** with separate Main and Worker servi
 - **N8n Main Service**: Handles web UI and API requests, enqueues workflow executions to the queue
 - **N8n Worker Service**: Processes queued workflow executions in the background
 - **Browserless Service**: Provides headless Chrome for browser automation workflows via WebSocket
-- **Aurora Serverless v2**: PostgreSQL 17.5 database with 0.5-1 ACU auto-scaling for workflow data
+- **Aurora Serverless v2**: PostgreSQL 17.7 database with 0.5-1 ACU auto-scaling for workflow data
 - **ElastiCache Valkey Serverless**: Redis-compatible serverless cache as Bull Queue backend for job queue
 - **EFS File System**: Shared storage for n8n data mounted to both Main and Worker services
 - **S3 Bucket**: Binary data storage for large workflow artifacts
@@ -252,7 +252,7 @@ terragrunt apply
 ##### Database Configuration (Aurora Serverless v2)
 - **N8N_DB_NAME**: Database name (default: `n8n`)
 - **N8N_DB_MASTER_USERNAME**: Database master username (default: `n8n_admin`)
-- **N8N_DB_ENGINE_VERSION**: PostgreSQL engine version (default: `17.5`)
+- **N8N_DB_ENGINE_VERSION**: PostgreSQL engine version (default: `17.7`)
 - **N8N_DB_MIN_CAPACITY**: Minimum ACUs (default: `0.5`)
 - **N8N_DB_MAX_CAPACITY**: Maximum ACUs (default: `4`)
 - **N8N_DB_INSTANCE_COUNT**: Number of database instances (default: `1`)

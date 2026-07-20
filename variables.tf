@@ -194,7 +194,7 @@ variable "db_master_username" {
 variable "db_engine_version" {
   type        = string
   description = "Aurora PostgreSQL engine version"
-  default     = "17.5"
+  default     = "17.7"
 }
 
 variable "db_parameter_group_family" {

@@ -109,7 +109,7 @@ The diagrams reflect the actual Terragrunt configuration from `stg/terragrunt/ne
 
 - **Compute**: ECS Fargate with FARGATE_SPOT capacity provider
 - **Containers**: n8nio/n8n:latest, n8nio/runners:latest, browserless/chrome:latest
-- **Database**: Aurora Serverless v2 PostgreSQL 17.5 (0.5-4 ACU, AWS-managed Multi-AZ)
+- **Database**: Aurora Serverless v2 PostgreSQL 17.7 (0.5-4 ACU, AWS-managed Multi-AZ)
 - **Cache & Queue**: ElastiCache Valkey Serverless (Bull Queue backend, AWS-managed Multi-AZ)
 - **Storage**: EFS for shared files (/home/node/.n8n), S3 for binary data
 - **Service Discovery**: AWS Cloud Map (browserless.local internal DNS)
