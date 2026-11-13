@@ -54,6 +54,7 @@ locals {
 module "vpc" {
   count              = var.vpc_id == null ? 1 : 0
   source             = "terraform-aws-modules/vpc/aws"
+  version            = "6.5.1"
   name               = "${var.prefix}-vpc"
   cidr               = local.vpc_cidr
   azs                = local.azs
@@ -68,4 +69,18 @@ module "vpc" {
   enable_dns_support   = true
 
   tags = var.tags
+}
+
+# S3 gateway endpoint for the VPC this module creates. Free (no hourly or per-GB charge): S3 traffic from
+# the private subnets goes through it instead of the NAT gateway, which bills US$0.059 per GB processed.
+# Requests through it reach S3 from private addresses, so a bucket policy that allows only the NAT's public
+# IP (aws:SourceIp) would refuse them; such policies need aws:SourceVpce or aws:SourceVpc instead.
+resource "aws_vpc_endpoint" "s3" {
+  count             = var.vpc_id == null ? 1 : 0
+  vpc_id            = module.vpc[0].vpc_id
+  service_name      = "com.amazonaws.${var.aws_region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = concat(module.vpc[0].private_route_table_ids, module.vpc[0].public_route_table_ids)
+
+  tags = merge(var.tags == null ? {} : var.tags, { Name = "${var.prefix}-s3" })
 }
