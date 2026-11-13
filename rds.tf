@@ -150,6 +150,13 @@ resource "aws_rds_cluster" "aurora" {
   # enabled_cloudwatch_logs_exports = ["postgresql"]
 
   tags = var.tags
+
+  # Minor versions change outside Terraform (auto minor upgrade or the console), so the version is not
+  # tracked. Major upgrade: remove this for that one apply, together with db_engine_version,
+  # db_parameter_group_family and allow_major_version_upgrade = true; then put it back.
+  lifecycle {
+    ignore_changes = [engine_version]
+  }
 }
 
 # Aurora Serverless v2 Instance
@@ -171,4 +178,9 @@ resource "aws_rds_cluster_instance" "aurora" {
       Name = "${var.prefix}-aurora-instance-${count.index + 1}"
     }
   )
+
+  # Follows the cluster's version; see the note on aws_rds_cluster.aurora.
+  lifecycle {
+    ignore_changes = [engine_version]
+  }
 }

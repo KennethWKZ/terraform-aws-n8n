@@ -193,8 +193,8 @@ variable "db_master_username" {
 
 variable "db_engine_version" {
   type        = string
-  description = "Aurora PostgreSQL engine version"
-  default     = "17.7"
+  description = "Aurora PostgreSQL engine version for a new cluster; an existing cluster's version is not tracked (ignore_changes)"
+  default     = "17.9"
 }
 
 variable "db_parameter_group_family" {
