@@ -127,6 +127,8 @@ inputs = {
 
   n8n_force_new_deployment          = true
   browserless_force_new_deployment  = true
+  # Set N8N_REDEPLOY_TRIGGER to a new value (e.g. $(date +%s)) to redeploy the ECS services on this apply.
+  ecs_redeployment_trigger          = get_env("N8N_REDEPLOY_TRIGGER", "")
 
   # Task Runner configuration (n8n v2.0+)
   task_runner_enabled                  = tobool(local.task_runner_enabled)

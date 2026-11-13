@@ -152,10 +152,12 @@ resource "aws_rds_cluster" "aurora" {
   tags = var.tags
 
   # Minor versions change outside Terraform (auto minor upgrade or the console), so the version is not
-  # tracked. Major upgrade: remove this for that one apply, together with db_engine_version,
+  # tracked. Major upgrade: remove engine_version here for that one apply, together with db_engine_version,
   # db_parameter_group_family and allow_major_version_upgrade = true; then put it back.
+  # final_snapshot_identifier is built with timestamp(), so it would change on every plan; the name set at
+  # creation is kept and only used if the cluster is deleted.
   lifecycle {
-    ignore_changes = [engine_version]
+    ignore_changes = [engine_version, final_snapshot_identifier]
   }
 }
 

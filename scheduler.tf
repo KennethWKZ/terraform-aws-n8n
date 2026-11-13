@@ -4,9 +4,10 @@
 # (default: 01:00 Asia/Kuala_Lumpur daily) so that n8n pulls the latest
 # container image every day without requiring `terragrunt apply`.
 #
-# Coexists with the `triggers { redeployment = plantimestamp() }` blocks
-# on the ECS services: Terraform-side triggers handle manual redeploys
-# during `terragrunt apply`; this scheduler handles the automated daily one.
+# The ECS services' `triggers { redeployment = var.ecs_redeployment_trigger }`
+# redeploy during `terragrunt apply` only when that value changes (for example
+# N8N_REDEPLOY_TRIGGER=$(date +%s) terragrunt apply); this scheduler handles
+# the automated daily redeploy.
 
 # IAM role assumed by EventBridge Scheduler to call ECS on our behalf
 resource "aws_iam_role" "ecs_scheduler" {

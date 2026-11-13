@@ -389,6 +389,12 @@ variable "browserless_force_new_deployment" {
   default     = false
 }
 
+variable "ecs_redeployment_trigger" {
+  type        = string
+  description = "Any new value redeploys the n8n, worker and browserless ECS services on the next apply (with force_new_deployment true); an unchanged value does not. The daily redeploy is the scheduler's job (scheduler.tf)."
+  default     = ""
+}
+
 # Task Runner Configuration Variables (n8n v2.0+)
 variable "task_runner_enabled" {
   type        = bool

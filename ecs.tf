@@ -736,7 +736,7 @@ resource "aws_ecs_service" "service" {
   force_new_deployment   = var.n8n_force_new_deployment
 
   triggers = {
-    redeployment = plantimestamp()
+    redeployment = var.ecs_redeployment_trigger
   }
 
   capacity_provider_strategy {
@@ -771,7 +771,7 @@ resource "aws_ecs_service" "worker" {
   force_new_deployment   = var.n8n_force_new_deployment
 
   triggers = {
-    redeployment = plantimestamp()
+    redeployment = var.ecs_redeployment_trigger
   }
 
   capacity_provider_strategy {
@@ -820,7 +820,7 @@ resource "aws_ecs_service" "browserless" {
   force_new_deployment = var.browserless_force_new_deployment
 
   triggers = {
-    redeployment = plantimestamp()
+    redeployment = var.ecs_redeployment_trigger
   }
   
   capacity_provider_strategy {
