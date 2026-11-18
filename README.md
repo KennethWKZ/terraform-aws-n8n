@@ -247,7 +247,7 @@ terragrunt apply
 ##### ElastiCache Valkey Serverless Configuration
 - **N8N_VALKEY_SERVERLESS_ECPU**: Maximum ECPUs per second (default: `5000`)
 - **N8N_VALKEY_SERVERLESS_STORAGE**: Maximum storage in GB (default: `1`)
-- **N8N_VALKEY_SERVERLESS_ENGINE_VERSION**: Valkey major engine version (default: `8`)
+- **N8N_VALKEY_SERVERLESS_ENGINE_VERSION**: Valkey major engine version (default: `9`)
 
 ##### Database Configuration (Aurora Serverless v2)
 - **N8N_DB_NAME**: Database name (default: `n8n`)
@@ -345,7 +345,7 @@ All Terragrunt examples include full support for:
 - Configurable via environment variables:
   - `N8N_VALKEY_SERVERLESS_ECPU`: Maximum ECPUs per second (default: `5000`)
   - `N8N_VALKEY_SERVERLESS_STORAGE`: Maximum storage in GB (default: `1`)
-  - `N8N_VALKEY_SERVERLESS_ENGINE_VERSION`: Valkey major version (default: `8`)
+  - `N8N_VALKEY_SERVERLESS_ENGINE_VERSION`: Valkey major version (default: `9`)
 - Valkey endpoint automatically injected into N8n container environment
 - No node provisioning or management required - fully AWS-managed
 

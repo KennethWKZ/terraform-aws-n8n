@@ -139,7 +139,7 @@ variable "alb_allowed_cidr_blocks" {
 variable "valkey_major_engine_version" {
   type        = string
   description = "ElastiCache Valkey major engine version for serverless"
-  default     = "8"
+  default     = "9"
 }
 
 variable "valkey_max_storage_gb" {

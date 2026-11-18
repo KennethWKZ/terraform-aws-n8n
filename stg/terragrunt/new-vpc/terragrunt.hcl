@@ -29,7 +29,7 @@ locals {
   fargate_type                    = get_env("N8N_FARGATE_TYPE", "FARGATE_SPOT")
   valkey_max_ecpu_per_second      = get_env("N8N_VALKEY_SERVERLESS_ECPU", "5000")
   valkey_max_storage_gb           = get_env("N8N_VALKEY_SERVERLESS_STORAGE", "1")
-  valkey_major_engine_version     = get_env("N8N_VALKEY_SERVERLESS_ENGINE_VERSION", "8")
+  valkey_major_engine_version     = get_env("N8N_VALKEY_SERVERLESS_ENGINE_VERSION", "9")
   route53_zone_id                 = get_env("N8N_ROUTE53_ZONE_ID", "")
   route53_record_name             = get_env("N8N_ROUTE53_RECORD_NAME", "")
   
