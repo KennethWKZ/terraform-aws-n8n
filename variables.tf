@@ -118,6 +118,12 @@ variable "use_private_subnets" {
   default     = true
 }
 
+variable "enable_execute_command" {
+  type        = bool
+  description = "Turn on ECS Exec (aws ecs execute-command) for the n8n main and worker services, and give the task role the SSM session permissions it needs. Running tasks pick it up on their next deployment."
+  default     = false
+}
+
 variable "enable_nat_gateway" {
   type        = bool
   description = "Create a managed NAT gateway in the VPC this module builds. Set false when another NAT (for example a fck-nat instance) owns the private route table's 0.0.0.0/0 route."

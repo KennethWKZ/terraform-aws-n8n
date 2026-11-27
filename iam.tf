@@ -24,7 +24,7 @@ resource "aws_iam_role_policy" "taskrole" {
   # Terraform expression result to valid JSON syntax.
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
+    Statement = concat([
       {
         Effect = "Allow",
         Action = [
@@ -72,7 +72,19 @@ resource "aws_iam_role_policy" "taskrole" {
           "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:${var.prefix}-valkey-credentials-*"
         ]
       }
-    ]
+      ], var.enable_execute_command ? [
+      {
+        # ECS Exec: the SSM agent inside the task opens its session channels.
+        Effect = "Allow",
+        Action = [
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
+        ],
+        Resource = "*"
+      }
+    ] : [])
   })
 }
 

@@ -731,6 +731,7 @@ resource "aws_security_group" "browserless" {
 resource "aws_ecs_service" "service" {
   name                   = "${var.prefix}-service"
   cluster                = aws_ecs_cluster.ecs.id
+  enable_execute_command = var.enable_execute_command
   task_definition        = aws_ecs_task_definition.taskdef.arn
   desired_count          = var.desired_count
   force_new_deployment   = var.n8n_force_new_deployment
@@ -766,6 +767,7 @@ resource "aws_ecs_service" "service" {
 resource "aws_ecs_service" "worker" {
   name                   = "${var.prefix}-worker-service"
   cluster                = aws_ecs_cluster.ecs.id
+  enable_execute_command = var.enable_execute_command
   task_definition        = aws_ecs_task_definition.worker.arn
   desired_count          = var.worker_desired_count
   force_new_deployment   = var.n8n_force_new_deployment
