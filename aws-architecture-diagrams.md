@@ -1,6 +1,6 @@
 # AWS N8n Architecture Diagrams
 
-Based on the Terragrunt configuration in `stg/terragrunt/new-vpc/terragrunt.hcl` and `prod/terragrunt/new-vpc/terragrunt.hcl`
+Based on the Terragrunt configuration in `prod/terragrunt/new-vpc/terragrunt.hcl` (staging used the same layout)
 
 ## 1. High-Level Architecture Overview
 

@@ -96,7 +96,7 @@ To modify the diagrams via MCP, use the `generate_diagram` tool with custom code
 
 ## Architecture Details
 
-The diagrams reflect the actual Terragrunt configuration from `stg/terragrunt/new-vpc/terragrunt.hcl` and `prod/terragrunt/new-vpc/terragrunt.hcl`:
+The diagrams reflect the actual Terragrunt configuration from `prod/terragrunt/new-vpc/terragrunt.hcl` (staging used the same layout):
 
 ### N8n Queue Mode Architecture
 
