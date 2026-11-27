@@ -31,20 +31,20 @@ data "aws_subnets" "existing_public" {
 locals {
   vpc_cidr = "10.0.0.0/16"
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)
-  
+
   # VPC configuration
   vpc_id         = var.vpc_id != null ? var.vpc_id : module.vpc[0].vpc_id
   vpc_cidr_block = var.vpc_id != null ? data.aws_vpc.existing[0].cidr_block : module.vpc[0].vpc_cidr_block
-  
+
   # Subnet configuration for ECS tasks
   ecs_subnets = length(var.subnet_ids) > 0 ? var.subnet_ids : (
     var.use_private_subnets ? (
       var.vpc_id != null ? data.aws_subnets.existing_private[0].ids : module.vpc[0].private_subnets
-    ) : (
+      ) : (
       var.vpc_id != null ? data.aws_subnets.existing_public[0].ids : module.vpc[0].public_subnets
     )
   )
-  
+
   # Public subnets for ALB (always public)
   public_subnets = length(var.public_subnet_ids) > 0 ? var.public_subnet_ids : (
     var.vpc_id != null ? data.aws_subnets.existing_public[0].ids : module.vpc[0].public_subnets
@@ -60,10 +60,10 @@ module "vpc" {
   azs                = local.azs
   private_subnets    = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k)]
   public_subnets     = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 4)]
-  enable_nat_gateway = true
-  single_nat_gateway = true  # Use single NAT Gateway for all private subnets (cost optimization)
+  enable_nat_gateway = var.enable_nat_gateway
+  single_nat_gateway = true # Use single NAT Gateway for all private subnets (cost optimization)
   enable_vpn_gateway = false
-  
+
   # Required for AWS Service Discovery to work
   enable_dns_hostnames = true
   enable_dns_support   = true
@@ -78,7 +78,7 @@ module "vpc" {
 resource "aws_vpc_endpoint" "s3" {
   count             = var.vpc_id == null ? 1 : 0
   vpc_id            = module.vpc[0].vpc_id
-  service_name      = "com.amazonaws.${var.aws_region}.s3"
+  service_name      = "com.amazonaws.${data.aws_region.current.id}.s3"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = concat(module.vpc[0].private_route_table_ids, module.vpc[0].public_route_table_ids)
 

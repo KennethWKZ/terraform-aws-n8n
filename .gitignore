@@ -41,3 +41,8 @@ examples/elasticscale
 !.env.example
 
 .DS_Store
+
+# Written by Terragrunt (root.hcl remote_state and generate "provider"). Not part of the module: a module that
+# carries its own provider or backend can't be used from another root module.
+backend.tf
+provider.tf

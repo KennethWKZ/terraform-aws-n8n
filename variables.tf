@@ -1,15 +1,3 @@
-variable "aws_region" {
-  type        = string
-  description = "AWS region for resource deployment"
-  default     = "us-east-1"
-}
-
-variable "aws_profile" {
-  type        = string
-  description = "AWS profile to use for authentication (optional)"
-  default     = null
-}
-
 variable "prefix" {
   type        = string
   description = "Prefix to add to all resources"
@@ -127,6 +115,12 @@ variable "public_subnet_ids" {
 variable "use_private_subnets" {
   type        = bool
   description = "Whether to deploy ECS tasks in private subnets (requires NAT Gateway or VPC endpoints for internet access)"
+  default     = true
+}
+
+variable "enable_nat_gateway" {
+  type        = bool
+  description = "Create a managed NAT gateway in the VPC this module builds. Set false when another NAT (for example a fck-nat instance) owns the private route table's 0.0.0.0/0 route."
   default     = true
 }
 

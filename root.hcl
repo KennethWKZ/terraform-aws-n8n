@@ -43,15 +43,13 @@ generate "provider" {
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
 provider "aws" {
-  region = var.aws_region
-  %{if local.aws_profile != ""}profile = var.aws_profile%{endif}
+  region = "${local.aws_region}"
+  %{if local.aws_profile != ""}profile = "${local.aws_profile}"%{endif}
 }
 EOF
 }
 
 # Define common variables that can be used across all modules
 inputs = {
-  aws_region  = local.aws_region
-  aws_profile = local.aws_profile != "" ? local.aws_profile : null
-  tags        = local.default_tags
+  tags = local.default_tags
 }

@@ -142,6 +142,9 @@ inputs = {
   # Staging-specific environment variables
   additional_n8n_env_vars = local.additional_n8n_env_vars
 
+  # Staging leaves the internet through a NAT instance managed outside this repo.
+  enable_nat_gateway = false
+
   # Note: When vpc_id is not specified, a new VPC will be created automatically
   # with public/private subnets, NAT Gateway, Internet Gateway, ElastiCache Redis, and Aurora Serverless v2
 }
