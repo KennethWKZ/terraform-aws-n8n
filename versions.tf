@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 6.22.1"
+      version = ">= 6.20" # the lowest version this module has run on (both stages' lock files)
     }
     random = {
       source  = "hashicorp/random"
