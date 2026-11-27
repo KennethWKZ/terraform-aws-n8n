@@ -124,6 +124,28 @@ variable "enable_execute_command" {
   default     = false
 }
 
+variable "ecs_exec_logging_enabled" {
+  type        = bool
+  description = "Log ECS Exec session output to a KMS-encrypted CloudWatch log group (<prefix>-ecs-exec-sessions). Needs `script` and `cat` in the container image; without them sessions are not logged."
+  default     = false
+}
+
+variable "ecs_exec_log_retention_days" {
+  type        = number
+  description = "Retention of the ECS Exec session log group, in days."
+  default     = 365
+  validation {
+    condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653], var.ecs_exec_log_retention_days)
+    error_message = "Must be a retention period CloudWatch Logs accepts (for example 90, 365, 1096)."
+  }
+}
+
+variable "ecs_exec_log_kms_key_arn" {
+  type        = string
+  description = "KMS key ARN for the ECS Exec session log group. Leave null to create a dedicated key (with rotation). A key you pass must let CloudWatch Logs use it for this log group."
+  default     = null
+}
+
 variable "enable_nat_gateway" {
   type        = bool
   description = "Create a managed NAT gateway in the VPC this module builds. Set false when another NAT (for example a fck-nat instance) owns the private route table's 0.0.0.0/0 route."

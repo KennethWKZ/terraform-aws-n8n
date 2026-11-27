@@ -316,6 +316,19 @@ resource "aws_ecs_cluster" "ecs" {
     value = "disabled"
   }
 
+  dynamic "configuration" {
+    for_each = var.ecs_exec_logging_enabled ? [1] : []
+    content {
+      execute_command_configuration {
+        logging = "OVERRIDE"
+        log_configuration {
+          cloud_watch_log_group_name     = aws_cloudwatch_log_group.ecs_exec[0].name
+          cloud_watch_encryption_enabled = true
+        }
+      }
+    }
+  }
+
   tags = var.tags
 }
 

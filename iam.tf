@@ -84,6 +84,22 @@ resource "aws_iam_role_policy" "taskrole" {
         ],
         Resource = "*"
       }
+      ] : [], var.enable_execute_command && var.ecs_exec_logging_enabled ? [
+      {
+        # ECS Exec session logging: the SSM agent checks the log group, then writes the session output to it.
+        Effect   = "Allow",
+        Action   = ["logs:DescribeLogGroups"],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogStream",
+          "logs:DescribeLogStreams",
+          "logs:PutLogEvents"
+        ],
+        Resource = "${aws_cloudwatch_log_group.ecs_exec[0].arn}:*"
+      }
     ] : [])
   })
 }
